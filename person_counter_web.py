@@ -1,10 +1,37 @@
 from flask import Flask, Response, redirect, url_for
+import threading
+import time
 import cv2
 from ultralytics import YOLO
 
 app = Flask(__name__)
 model = YOLO('yolov8n.pt')
-camera = cv2.VideoCapture(0)  # change to 1 if it grabs the wrong camera
+CAMERA_INDEX = 0  # change to 1 if it grabs the wrong camera
+camera = cv2.VideoCapture(CAMERA_INDEX)
+camera_lock = threading.Lock()
+REOPEN_AFTER = 5       # failed reads in a row before the camera is reopened
+REOPEN_WAIT_S = 2      # pause between reopen attempts
+failed_reads = 0
+
+
+def read_frame():
+    """Next frame, or None. When the camera stops giving frames (e.g. the USB camera dropped
+    and came back), close it and open it again instead of ending the feed for good."""
+    global camera, failed_reads
+    with camera_lock:
+        success, frame = camera.read()
+        if success:
+            failed_reads = 0
+            return frame
+        failed_reads += 1
+        if failed_reads >= REOPEN_AFTER:
+            print(f"camera: {failed_reads} failed reads, reopening /dev/video{CAMERA_INDEX}", flush=True)
+            camera.release()
+            time.sleep(REOPEN_WAIT_S)
+            camera = cv2.VideoCapture(CAMERA_INDEX)
+            failed_reads = 0
+    time.sleep(0.2)
+    return None
 
 # Vertical line position (50% of frame width)
 LINE_X_RATIO = 0.5
@@ -18,9 +45,9 @@ def generate_frames():
     global left_to_right_count, right_to_left_count
 
     while True:
-        success, frame = camera.read()
-        if not success:
-            break
+        frame = read_frame()
+        if frame is None:
+            continue  # camera is being reopened; keep the feed open
 
         h, w = frame.shape[:2]
         line_x = int(w * LINE_X_RATIO)
