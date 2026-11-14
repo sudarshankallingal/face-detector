@@ -1,0 +1,19 @@
+[Unit]
+Description=Person counter web app (Flask on :5001)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=nvidia
+Group=nvidia
+SupplementaryGroups=video
+WorkingDirectory=/home/nvidia/watchdog
+Environment=HOME=/home/nvidia
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/python3 /home/nvidia/watchdog/person_counter_web.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
