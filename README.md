@@ -19,8 +19,8 @@ since that's the name `face_detect.py` looks for by default.
 ## Setup steps
 
 ```bash
-git clone https://github.com/sudarshankallingal/face-detector.git
-cd face-detector
+git clone https://github.com/sudarshankallingal/face-detector.git watchdog
+cd watchdog
 
 # Download the YuNet model (2022mar build — compatible with OpenCV 4.5.4)
 curl -fsSL -o face_detection_yunet_2023mar.onnx \
